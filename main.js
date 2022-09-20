@@ -22,8 +22,11 @@ const counterElement = document.getElementById("counter");
 
 // refresh the board
 function refresh(e) {
-  WIDTH = Number(document.getElementById("width").value) || WIDTH;
-  HEIGHT = Number(document.getElementById("height").value) || HEIGHT;
+  WIDTH = Math.max(Number(document.getElementById("width").value) || WIDTH, 1);
+  HEIGHT = Math.max(
+    Number(document.getElementById("height").value) || HEIGHT,
+    1
+  );
   initializeBoard(WIDTH, HEIGHT);
 
   e.preventDefault();
@@ -32,7 +35,10 @@ function refresh(e) {
 
 function randomColor() {
   return COLORS[
-    Math.floor(Math.random() * Math.min(Number(numColors.value), COLORS.length))
+    Math.floor(
+      Math.random() *
+        Math.min(Math.max(Number(numColors.value) || 1, 1), COLORS.length)
+    )
   ];
 }
 
