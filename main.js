@@ -42,9 +42,11 @@ let boardElement = document.getElementById("board");
 
 let cellCounter = 0;
 let moves = 0;
+let recordedMoves = [];
 
 function initializeBoard(width, height) {
   moves = 0;
+  recordedMoves = [];
   const numOfSquares = width * height;
   boardElement.style.setProperty("--width", width);
 
@@ -54,7 +56,7 @@ function initializeBoard(width, height) {
     d.classList.add("cell");
     boardElement.appendChild(d);
     let index = squares.length;
-    d.addEventListener("click", () => clickCell(index));
+    d.addEventListener("click", () => clickCell(board, index, true));
     squares.push(d);
   }
 
@@ -74,15 +76,17 @@ function initializeBoard(width, height) {
   board[0][0].linked = true;
   cellCounter = 1;
 
-  updateBoard();
+  updateBoard(board, true);
 }
 
 // update board after modifications happened
-function updateBoard() {
+function updateBoard(board, refresh) {
   updateCellsLinked(board);
   updateCellsInteractive(board);
 
-  updateBoardElement(board, squares);
+  if (refresh) {
+    updateBoardElement(board, squares);
+  }
 }
 
 function updateCellsLinked(board) {
@@ -133,12 +137,12 @@ function updateCellLinked(board, cell, rowIndex, columnIndex) {
 function updateCellsInteractive(board) {
   board.forEach((row, rowIndex) => {
     row.forEach((cell, columnIndex) => {
-      updateCellInteractive(cell, rowIndex, columnIndex);
+      updateCellInteractive(board, cell, rowIndex, columnIndex);
     });
   });
 }
 
-function updateCellInteractive(cell, rowIndex, columnIndex) {
+function updateCellInteractive(board, cell, rowIndex, columnIndex) {
   if (cell.linked) {
     cell.interactive = false;
     return;
@@ -168,6 +172,7 @@ function updateCellInteractive(cell, rowIndex, columnIndex) {
   if (cell.interactive) {
     if (rowIndex > 0) {
       updateCellInteractive(
+        board,
         board[Math.max(0, rowIndex - 1)][columnIndex],
         rowIndex - 1,
         columnIndex
@@ -175,6 +180,7 @@ function updateCellInteractive(cell, rowIndex, columnIndex) {
     }
     if (columnIndex > 0) {
       updateCellInteractive(
+        board,
         board[rowIndex][Math.max(0, columnIndex - 1)],
         rowIndex,
         columnIndex - 1
@@ -204,11 +210,12 @@ function updateCellsColor(color) {
   });
 }
 
-function clickCell(index) {
+function clickCell(board, index, refresh) {
+  recordedMoves.push(index);
   const color = squares[index].style.getPropertyValue("--color");
   moves++;
   updateCellsColor(color);
-  updateBoard();
+  updateBoard(board, refresh);
 }
 
 document.getElementById("solve").addEventListener("click", solveClick);
@@ -225,12 +232,15 @@ function solveClick() {
 // solve the board automatically using specified algorithm
 function solve() {
   console.log(`solving using: ${document.getElementById("select").value}`);
-  const index = algorithm[document.getElementById("select").value]();
+  const index = algorithm[document.getElementById("select").value](board);
   if (isNaN(index)) {
+    if (!DELAY) {
+      updateBoard(true);
+    }
     return;
   }
 
-  clickCell(index);
+  clickCell(board, index, DELAY);
   if (DELAY) {
     setTimeout(solve, 1000);
   } else {
@@ -239,7 +249,7 @@ function solve() {
 }
 
 const algorithm = {
-  random: function () {
+  random: function (board) {
     let interactives = [];
     board.forEach((row, rowIndex) => {
       row.forEach((cell, columnIndex) => {
@@ -253,7 +263,7 @@ const algorithm = {
     }
     return interactives[Math.floor(Math.random() * interactives.length)];
   },
-  greedy: function () {
+  greedy: function (board) {
     let interactives = {};
     board.forEach((row, rowIndex) => {
       row.forEach((cell, columnIndex) => {
@@ -279,6 +289,10 @@ const algorithm = {
       }
     });
     return biggest.index;
+  },
+  shaker: function () {
+    // use another algorithm, and shake a bit to see if improves or not
+    // not with random, useless
   },
 };
 
