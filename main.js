@@ -206,7 +206,7 @@ function updateBoardElement(board, squares) {
   });
 }
 
-function updateCellsColor(color) {
+function updateCellsColor(board, color) {
   board.forEach((row) => {
     row.forEach((cell) => {
       if (cell.linked) {
@@ -216,11 +216,13 @@ function updateCellsColor(color) {
   });
 }
 
-function clickCell(board, index, refresh) {
-  recordedMoves.push(index);
-  const color = squares[index].style.getPropertyValue("--color");
+function clickCell(board, index, refresh, record = true) {
+  if (record) {
+    recordedMoves.push(index);
+  }
+  const color = getBoardColor(board, index);
   moves++;
-  updateCellsColor(color);
+  updateCellsColor(board, color);
   updateBoard(board, refresh);
 }
 
@@ -241,7 +243,7 @@ function solve() {
   const index = algorithm[document.getElementById("select").value](board);
   if (isNaN(index)) {
     if (!DELAY) {
-      updateBoard(true);
+      updateBoard(board, true);
     }
     return;
   }
@@ -296,10 +298,109 @@ const algorithm = {
     });
     return biggest.index;
   },
-  shaker: function () {
-    // use another algorithm, and shake a bit to see if improves or not
-    // not with random, useless
+  // use another algorithm, and shake a bit to see if improves or not
+  // not with random, useless
+  shaker: function (board) {
+    const algo1 = "greedy";
+    const boardCopy = JSON.parse(JSON.stringify(board));
+    const boardCopy2 = JSON.parse(JSON.stringify(board));
+
+    // first normal pass
+    const recordedMoves = runAlgorithm(boardCopy, algo1);
+
+    const copiedRecordedMoves = JSON.parse(JSON.stringify(recordedMoves));
+    const boardReplayCopy = JSON.parse(JSON.stringify(board));
+
+    // try repeatedOptimizations
+    const newRecordedMoves = testRepeatedOptimizations(
+      boardReplayCopy,
+      copiedRecordedMoves,
+      algo1
+    );
+
+    // display results, first improved, then original
+    if (DELAY && copiedRecordedMoves.length > newRecordedMoves.length) {
+      let i = 0;
+      function app() {
+        clickCell(board, newRecordedMoves[i], true, true);
+        i++;
+        if (i < newRecordedMoves.length) {
+          setTimeout(app, 1000);
+        } else {
+          setTimeout(() => {
+            for (let j = 0; j < board.length; j++) {
+              board[j] = boardCopy2[j];
+            }
+            i = 0;
+            app();
+          }, 5000);
+        }
+      }
+      app();
+    }
+
+    // each move, try something else and keep the better one
+    // for (
+    //   let moveNumber = 1;
+    //   moveNumber < copiedRecordedMoves.length;
+    //   moveNumber++
+    // ) {
+    //   for (let i = 0; i < moveNumber; i++) {
+    //     clickCell(boardReplayCopy, copiedRecordedMoves[i], DELAY, false);
+    //   }
+    //   runAlgorithm(boardCopy, algo1);
+    // }
   },
 };
+
+// run an algorithm given a specified board state
+function runAlgorithm(board, algo, refresh) {
+  const moves = [];
+  while (true) {
+    const index = algorithm[algo](board);
+    if (isNaN(index)) {
+      break;
+    }
+    moves.push(index);
+    clickCell(board, index, refresh, false);
+  }
+  return moves;
+}
+
+// check if there are repeats like: caba and see if cba is better
+function testRepeatedOptimizations(board, recordedMoves, algorithm) {
+  let newRecordedMoves = [];
+  for (
+    let moveNumber = 0;
+    moveNumber + 2 < recordedMoves.length;
+    moveNumber++
+  ) {
+    const boardCopy = JSON.parse(JSON.stringify(board));
+    if (
+      getBoardColor(boardCopy, recordedMoves[moveNumber]) ===
+      getBoardColor(boardCopy, recordedMoves[moveNumber + 2])
+    ) {
+      console.log("same: ", moveNumber);
+      for (let i = 0; i < moveNumber; i++) {
+        clickCell(boardCopy, recordedMoves[i], false);
+        newRecordedMoves.push(recordedMoves[i]);
+      }
+      clickCell(boardCopy, recordedMoves[moveNumber + 1], false);
+      newRecordedMoves.push(recordedMoves[moveNumber + 1]);
+      newRecordedMoves = newRecordedMoves.concat(
+        runAlgorithm(boardCopy, algorithm, false)
+      );
+      if (newRecordedMoves.length < recordedMoves.length) {
+        console.log("smaller");
+        recordedMoves = newRecordedMoves;
+      }
+    }
+  }
+  return recordedMoves;
+}
+
+function getBoardColor(board, index) {
+  return board[Math.floor(index / WIDTH)][index % WIDTH].color;
+}
 
 initializeBoard(WIDTH, HEIGHT);
