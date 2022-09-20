@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Color It</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" type="text/css" media="screen" href="main.css" />
+    <script defer src="main.js"></script>
+  </head>
+  <body>
+    <form>
+      <label for="width">Width:</label><input type="number" id="width" />
+      <label for="width">Height:</label><input type="number" id="height" />
+      <label for="numColors">#colors:</label
+      ><input type="number" id="numColors" />
+      <button id="refresh">Refresh</button>
+    </form>
+    <span id="counter"></span>
+    <select id="select">
+      <option value="random">random</option>
+      <option value="greedy">greedy</option>
+    </select>
+    <button id="solve">Solve</button>
+    <div id="board"></div>
+  </body>
+</html>

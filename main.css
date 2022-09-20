@@ -1,0 +1,20 @@
+#board {
+  display: grid;
+  grid-template-columns: repeat(var(--width), 1fr);
+  grid-template-rows: repeat(auto, 1fr);
+  grid-gap: 10px;
+  width: min(100vw, calc(100vh - 50px));
+  height: min(100vw, calc(100vh - 50px));
+}
+
+.cell {
+  background-color:  var(--color);
+  pointer-events: none;
+}
+
+.cell[data-interactive = true] {
+  pointer-events: all;
+}
+.cell[data-interactive = true] {
+  border: solid white 1px;
+}
